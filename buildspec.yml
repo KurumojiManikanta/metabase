@@ -4,13 +4,9 @@ phases:
   install:
     commands:
       - echo "Installing dependencies..."
-      - chmod +x ./bin/build.sh
+      - chmod +x bin/build.sh
   build:
     commands:
-      - echo "Building Metabase app..."
+      - echo "Building Metabase application..."
       - ./bin/build.sh
-
-artifacts:
-  files:
-    - '**/*'
 

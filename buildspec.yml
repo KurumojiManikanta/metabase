@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing dependencies..."
+      - chmod +x ./bin/build.sh
+  build:
+    commands:
+      - echo "Building Metabase app..."
+      - ./bin/build.sh
+
+artifacts:
+  files:
+    - '**/*'
+

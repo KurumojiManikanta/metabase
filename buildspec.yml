@@ -1,12 +1,70 @@
 version: 0.2
 
+env:
+  variables:
+    MB_ARTIFACT_NAME: metabase.jar
+
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
-      - chmod +x bin/build.sh
+      - echo "🚀 Starting Install Phase"
+      
+      # Install Node.js 22
+      - curl -fsSL https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz -o node.tar.xz
+      - tar -xf node.tar.xz
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
+      - node --version
+      
+      # Install Java 21
+      - apt-get update -y
+      - apt-get install -y openjdk-21-jdk curl wget xz-utils git
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export PATH=$JAVA_HOME/bin:$PATH
+      - java -version
+      
+      # Install Clojure
+      - curl -O https://download.clojure.org/install/linux-install-1.11.1.1347.sh
+      - chmod +x linux-install-1.11.1.1347.sh
+      - ./linux-install-1.11.1.1347.sh
+      - export PATH=$PATH:/usr/local/bin
+      - clojure -Sdescribe
+      
+      # Install Yarn and dependencies
+      - npm install -g yarn
+      - echo "📦 Installing Yarn dependencies..."
+      - yarn install --frozen-lockfile
+
+      # 🧩 FIX: Add missing drag-drop dependency to prevent rspack errors
+      - echo "Installing missing react-beautiful-dnd dependency..."
+      - yarn add react-beautiful-dnd@13.1.1 --silent || true
+
   build:
     commands:
-      - echo "Building Metabase application..."
-      - ./bin/build.sh
+      - echo "🏗️ Starting Build Phase"
+      - export PATH=$(pwd)/node-v22.11.0-linux-x64/bin:$PATH
+      - export PATH=$PATH:/usr/local/bin
+      - export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+      - export PATH=$JAVA_HOME/bin:$PATH
+      - chmod +x ./bin/*
 
+      - echo "Running Metabase build script..."
+      - ./bin/build || ./bin/build.sh || ./bin/build-for-test
+
+      - echo "🔍 Searching for built JAR..."
+      - |
+        TARGET_JAR=$(find . -name 'metabase*.jar' 2>/dev/null | head -n 1)
+        if [ -n "$TARGET_JAR" ]; then
+          echo "✅ Found JAR: $TARGET_JAR"
+          mv "$TARGET_JAR" "$MB_ARTIFACT_NAME"
+          echo "🎉 Successfully created $MB_ARTIFACT_NAME"
+        else
+          echo "❌ No JAR found after build attempts"
+          exit 1
+        fi
+
+artifacts:
+  files:
+    - metabase.jar
+    - appspec.yml
+    - scripts/**/*
+  discard-paths: no
